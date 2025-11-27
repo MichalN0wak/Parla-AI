@@ -1,0 +1,108 @@
+# Workflow Status Template
+
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2025-11-27T05:25:45Z"
+project: "Parla-AI"
+project_type: "greenfield"
+selected_track: "bmad-method"
+field_type: "greenfield"
+workflow_path: ".bmad/bmm/workflows/workflow-status/paths/method-greenfield.yaml"
+workflow_status:
+  phase_0_discovery:
+    name: "Discovery (Optional)"
+    optional: true
+    workflows:
+      brainstorm-project:
+        status: "optional"
+        agent: "analyst"
+        command: "brainstorm-project"
+        included: false
+      research:
+        status: "optional"
+        agent: "analyst"
+        command: "research"
+        included: false
+      product-brief:
+        status: "docs/product-brief-Parla-AI-2025-11-27.md"
+        agent: "analyst"
+        command: "product-brief"
+        included: true
+        note: "Recommended for greenfield Method projects"
+  
+  phase_1_planning:
+    name: "Planning"
+    required: true
+    workflows:
+      prd:
+        status: "docs/prd.md"
+        agent: "pm"
+        command: "prd"
+        output: "Product Requirements Document with FRs and NFRs"
+      validate-prd:
+        status: "optional"
+        agent: "pm"
+        command: "validate-prd"
+        note: "Quality check for PRD completeness"
+      create-design:
+        status: "docs/ux-design-specification.md"
+        conditional: "if_has_ui"
+        agent: "ux-designer"
+        command: "create-design"
+        note: "Determined after PRD - user/agent decides if needed"
+  
+  phase_2_solutioning:
+    name: "Solutioning"
+    required: true
+    workflows:
+      create-architecture:
+        status: "required"
+        agent: "architect"
+        command: "create-architecture"
+        output: "System architecture document"
+        note: "Complete system design for greenfield projects"
+      create-epics-and-stories:
+        status: "required"
+        agent: "pm"
+        command: "create-epics-and-stories"
+        note: "Required: Break down PRD into implementable epics and stories with full context (PRD + UX + Architecture)"
+      test-design:
+        status: "recommended"
+        agent: "tea"
+        command: "test-design"
+        output: "System-level testability review"
+        note: "Testability assessment before gate check - auto-detects system-level mode"
+      validate-architecture:
+        status: "optional"
+        agent: "architect"
+        command: "validate-architecture"
+        note: "Quality check for architecture completeness"
+      implementation-readiness:
+        status: "required"
+        agent: "architect"
+        command: "implementation-readiness"
+        note: "Validates PRD + UX + Architecture + Epics + Testability cohesion before implementation"
+  
+  phase_3_implementation:
+    name: "Implementation"
+    required: true
+    workflows:
+      sprint-planning:
+        status: "required"
+        agent: "sm"
+        command: "sprint-planning"
+        note: "Creates sprint plan - subsequent work tracked there"
+

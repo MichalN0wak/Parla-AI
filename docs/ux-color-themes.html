@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parla-AI Color Theme Explorer</title>
+  <style>
+    :root {
+      --background: #F9FAFB;
+      --surface: #FFFFFF;
+      --primary: #10B981;
+      --primary-dark: #0B8A6E;
+      --primary-light: #E6FBF3;
+      --secondary: #F43F5E;
+      --secondary-dark: #C32C48;
+      --secondary-light: #FFE7EB;
+      --text-main: #1F2937;
+      --text-muted: #6B7280;
+      --border: #E5E7EB;
+      --success: #10B981;
+      --success-bg: #E6FBF3;
+      --warning: #FBBF24;
+      --warning-bg: #FFF8E6;
+      --error: #F43F5E;
+      --error-bg: #FFE7EB;
+      --info: #3B82F6;
+      --info-bg: #E1EDFF;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--background);
+      color: var(--text-main);
+    }
+
+    header {
+      padding: 48px 24px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin-bottom: 8px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 24px;
+      padding: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .swatches {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      margin-top: 16px;
+    }
+
+    .swatch {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .swatch-color {
+      height: 72px;
+    }
+
+    .swatch-info {
+      padding: 12px;
+      font-size: 0.9rem;
+    }
+
+    .swatch-info strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .component-demo {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: transform 150ms ease, box-shadow 150ms ease;
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--info);
+      outline-offset: 3px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--surface);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: var(--surface);
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25);
+    }
+    .btn-secondary:hover { background: var(--secondary-dark); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px dashed var(--border);
+    }
+
+    .alert {
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert.success {
+      background: var(--success-bg);
+      color: var(--success);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .alert.warning {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border-color: rgba(251, 191, 36, 0.45);
+    }
+    .alert.error {
+      background: var(--error-bg);
+      color: var(--error);
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    .alert.info {
+      background: var(--info-bg);
+      color: var(--info);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    .learning-card {
+      border-radius: 16px;
+      padding: 18px;
+      border: 1px solid;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .learning-card.vocab {
+      background: var(--primary-light);
+      border-color: #A7E8CF;
+    }
+
+    .learning-card.correction {
+      background: var(--secondary-light);
+      border-color: #F8B4C3;
+    }
+
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Parla-AI Color Theme Explorer</h1>
+    <p>Modern Italian café palette inspired by the Tricolore &mdash; Emerald Green + Modern Coral with espresso neutrals.</p>
+  </header>
+
+  <section class="grid">
+    <article class="card">
+      <h2>Core Palette</h2>
+      <div class="swatches">
+        <div class="swatch">
+          <div class="swatch-color" style="background:#F9FAFB"></div>
+          <div class="swatch-info">
+            <strong>Latte White</strong>
+            <code>#F9FAFB</code>
+            <div>Background</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#10B981"></div>
+          <div class="swatch-info">
+            <strong>Emerald Green</strong>
+            <code>#10B981</code>
+            <div>Primary</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#F43F5E"></div>
+          <div class="swatch-info">
+            <strong>Modern Coral</strong>
+            <code>#F43F5E</code>
+            <div>Secondary</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#1F2937"></div>
+          <div class="swatch-info">
+            <strong>Espresso Black</strong>
+            <code>#1F2937</code>
+            <div>Text Main</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#6B7280"></div>
+          <div class="swatch-info">
+            <strong>Stone Gray</strong>
+            <code>#6B7280</code>
+            <div>Text Muted</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#FFFFFF;border:1px solid var(--border)"></div>
+          <div class="swatch-info">
+            <strong>Pure White</strong>
+            <code>#FFFFFF</code>
+            <div>Surface</div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Buttons &amp; Controls</h2>
+      <p>Primary and secondary actions showcase the emerald / coral pairing. Ghost button keeps focus light.</p>
+      <div class="component-demo">
+        <button class="btn btn-primary">Start Conversation</button>
+        <button class="btn btn-secondary">Highlight Action</button>
+        <button class="btn btn-ghost">Secondary Link</button>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Status &amp; Feedback</h2>
+      <div class="component-demo" style="flex-direction:column">
+        <div class="alert success">✔ Vocabulary copied to clipboard</div>
+        <div class="alert warning">⚠ Connection unstable, retrying…</div>
+        <div class="alert error">✖ Microphone permission required</div>
+        <div class="alert info">ℹ Session saved locally</div>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Learning Card Examples</h2>
+      <div class="learning-card vocab">
+        <strong>New Vocabulary</strong>
+        <div><em>immersivo</em> → „immersyjny”</div>
+        <small>Tap to copy · Emerald accent</small>
+      </div>
+      <div class="learning-card correction">
+        <strong>Grammar Correction</strong>
+        <div><span style="text-decoration:line-through;color:#B01E2A">Io andato</span> → <span style="font-weight:600">Sono andato</span></div>
+        <small>Gentle coral highlight for corrections</small>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Extended Palette</h2>
+      <div class="swatches">
+        <div class="swatch">
+          <div class="swatch-color" style="background:#0B8A6E"></div>
+          <div class="swatch-info">
+            <strong>Emerald Deep</strong>
+            <code>#0B8A6E</code>
+            <div>Primary Dark</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#E6FBF3"></div>
+          <div class="swatch-info">
+            <strong>Mint Foam</strong>
+            <code>#E6FBF3</code>
+            <div>Primary Light</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#C32C48"></div>
+          <div class="swatch-info">
+            <strong>Coral Deep</strong>
+            <code>#C32C48</code>
+            <div>Secondary Dark</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#FFE7EB"></div>
+          <div class="swatch-info">
+            <strong>Rosato</strong>
+            <code>#FFE7EB</code>
+            <div>Secondary Light</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#E5E7EB"></div>
+          <div class="swatch-info">
+            <strong>Marble Border</strong>
+            <code>#E5E7EB</code>
+            <div>Border Neutral</div>
+          </div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background:#9CA3AF"></div>
+          <div class="swatch-info">
+            <strong>Muted Stone</strong>
+            <code>#9CA3AF</code>
+            <div>Disabled Text</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <footer>
+    Parla-AI · Modern Italian Café Palette · Generated {{new Date().toLocaleDateString()}}
+  </footer>
+  <script>
+    document.querySelector('footer').innerHTML =
+      `Parla-AI · Modern Italian Café Palette · Generated ${new Date().toLocaleDateString()}`;
+  </script>
+</body>
+</html>
+
