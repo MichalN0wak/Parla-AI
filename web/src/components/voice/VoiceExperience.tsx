@@ -9,6 +9,7 @@ import {
   getTurnOrchestrationService,
   type TurnStatus,
 } from "@/lib/ai/turnOrchestration";
+import { getCoachingService } from "@/lib/ai/coaching";
 
 const FALLBACK_CONVERSATION: VoiceLine[] = [
   { speaker: "AI", text: "Ciao! Di cosa vuoi parlare oggi?" },
@@ -191,6 +192,8 @@ export default function VoiceExperience() {
       // Reset services when session ends
       conversationService.reset();
       turnService.reset();
+      const coachingService = getCoachingService();
+      coachingService.reset();
     }
 
     return () => {
@@ -219,7 +222,15 @@ export default function VoiceExperience() {
       stopRecording();
       // User finished speaking - trigger AI response
       const turnService = getTurnOrchestrationService();
+      const coachingService = getCoachingService();
+      
+      // Record speech end for pause detection
+      coachingService.recordSpeechEnd();
+      
       turnService.userFinishedSpeaking();
+      
+      // TODO: When real transcription is available, analyze the transcript here
+      // For now, coaching will be handled by the conversation service
       return;
     }
     // Only allow recording during user's turn
@@ -233,8 +244,10 @@ export default function VoiceExperience() {
     voiceReset();
     const conversationService = getConversationService();
     const turnService = getTurnOrchestrationService();
+    const coachingService = getCoachingService();
     conversationService.reset();
     turnService.reset();
+    coachingService.reset();
     endSession();
   };
 

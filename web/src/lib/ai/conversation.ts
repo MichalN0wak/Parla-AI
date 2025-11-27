@@ -9,6 +9,10 @@ import {
   getTurnOrchestrationService,
   type TurnStatus,
 } from "@/lib/ai/turnOrchestration";
+import {
+  getCoachingService,
+  type CoachingEvent,
+} from "@/lib/ai/coaching";
 
 /**
  * Configuration for AI conversation service.
@@ -37,6 +41,7 @@ export class ConversationService {
   private promptConfig: PromptConfig | null = null;
   private messages: ConversationMessage[] = [];
   private onMessage?: (message: ConversationMessage) => void;
+  private coachingService = getCoachingService();
 
   /**
    * Initializes a new conversation session.
@@ -78,6 +83,11 @@ export class ConversationService {
       config.proficiency,
     );
     this.addMessage("assistant", greeting);
+
+    // Set up coaching service callbacks
+    this.coachingService.setCallback((event) => {
+      this.handleCoachingEvent(event);
+    });
   }
 
   /**
@@ -154,20 +164,26 @@ export class ConversationService {
     this.promptConfig = null;
     this.messages = [];
     this.onMessage = undefined;
+    this.coachingService.reset();
   }
 
   /**
    * Sends a user message and triggers AI response.
    * Integrates with turn orchestration for proper turn management.
    */
-  async sendUserMessage(content: string): Promise<void> {
+  async sendUserMessage(content: string, isPolish: boolean = false): Promise<void> {
     const turnService = getTurnOrchestrationService();
+    
+    // Analyze speech for coaching opportunities
+    this.coachingService.analyzeSpeech(content, isPolish);
+    this.coachingService.recordSpeech(); // Reset pause detection
     
     // Add user message
     this.addMessage("user", content);
     
     // Mark that user finished speaking
     turnService.userFinishedSpeaking();
+    this.coachingService.recordSpeechEnd(); // Start pause detection
     
     // TODO: Integrate with OpenAI Realtime API
     // For now, simulate AI response with delay
@@ -185,6 +201,18 @@ export class ConversationService {
         turnService.startUserTurn();
       }
     }
+  }
+
+  /**
+   * Handles coaching events and adds supportive messages
+   */
+  private handleCoachingEvent(event: CoachingEvent): void {
+    // Add coaching message as assistant response
+    this.addMessage("assistant", event.message);
+    
+    // Queue audio for coaching message
+    const turnService = getTurnOrchestrationService();
+    turnService.queueAudio(event.message);
   }
 
   /**
