@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useMicrophoneController } from "@/hooks/useMicrophoneController";
 import { useSessionStore } from "@/store/useSessionStore";
 import { MicPhase, VoiceLine, useVoiceStore } from "@/store/useVoiceStore";
+import { getConversationService } from "@/lib/ai/conversation";
 
 const FALLBACK_CONVERSATION: VoiceLine[] = [
   { speaker: "AI", text: "Ciao! Di cosa vuoi parlare oggi?" },
@@ -97,6 +98,48 @@ export default function VoiceExperience() {
   const sessionActive = useSessionStore((state) => state.sessionActive);
   const endSession = useSessionStore((state) => state.actions.endSession);
 
+  // Initialize conversation service when session starts
+  useEffect(() => {
+    const conversationService = getConversationService();
+    
+    if (sessionActive && topic && proficiency) {
+      // Initialize conversation with topic and proficiency
+      conversationService.initialize({
+        topic,
+        proficiency,
+        sessionId: `session-${Date.now()}`,
+      });
+
+      // Get initial greeting and add it to transcripts
+      const history = conversationService.getHistory();
+      const initialGreeting = history.find((msg) => msg.role === "assistant");
+      if (initialGreeting) {
+        clearTranscripts();
+        addTranscript({
+          speaker: "AI",
+          text: initialGreeting.content,
+        });
+      }
+
+      // Listen for new messages
+      conversationService.onNewMessage((message) => {
+        if (message.role === "assistant") {
+          addTranscript({
+            speaker: "AI",
+            text: message.content,
+          });
+        }
+      });
+    } else if (!sessionActive) {
+      // Reset conversation service when session ends
+      conversationService.reset();
+    }
+
+    return () => {
+      // Cleanup handled by reset above
+    };
+  }, [sessionActive, topic, proficiency, addTranscript, clearTranscripts]);
+
   useMockTranscriptionFeed({ micPhase, addTranscript, clearTranscripts });
 
   const conversation = transcripts.length
@@ -123,6 +166,8 @@ export default function VoiceExperience() {
   const handleEndSession = () => {
     stopRecording();
     voiceReset();
+    const conversationService = getConversationService();
+    conversationService.reset();
     endSession();
   };
 
@@ -328,6 +373,7 @@ function useMockTranscriptionFeed({
 }) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const payloadRef = useRef<VoiceLine[]>([]);
+  const hasAddedMockData = useRef(false);
 
   useEffect(() => {
     if (micPhase !== "recording") {
@@ -336,27 +382,32 @@ function useMockTranscriptionFeed({
       }
       intervalRef.current = null;
       payloadRef.current = [];
+      hasAddedMockData.current = false;
       return;
     }
 
-    clearTranscripts();
-    payloadRef.current = [...MOCK_STREAM_RESPONSES];
+    // Only add mock data once when recording starts
+    // Don't clear existing transcripts (preserve initial greeting from Story 2.1)
+    if (!hasAddedMockData.current) {
+      hasAddedMockData.current = true;
+      payloadRef.current = [...MOCK_STREAM_RESPONSES];
 
-    addTranscript({
-      speaker: "System",
-      text: "🔄 Connecting to OpenAI Realtime (mock feed)…",
-    });
+      addTranscript({
+        speaker: "System",
+        text: "🔄 Connecting to OpenAI Realtime (mock feed)…",
+      });
 
-    intervalRef.current = setInterval(() => {
-      const next = payloadRef.current.shift();
-      if (!next) {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        const next = payloadRef.current.shift();
+        if (!next) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          return;
         }
-        return;
-      }
-      addTranscript(next);
-    }, 2200);
+        addTranscript(next);
+      }, 2200);
+    }
 
     return () => {
       if (intervalRef.current) {

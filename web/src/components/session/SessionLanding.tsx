@@ -14,11 +14,20 @@ export default function SessionLanding() {
   const topic = useSessionStore((state) => state.topic);
   const proficiency = useSessionStore((state) => state.proficiency);
   const sessionActive = useSessionStore((state) => state.sessionActive);
-  const { setTopic, setProficiency, startSession, endSession, clearTopicIfNeeded, hydrate } =
-    useSessionStore((state) => state.actions);
+  
+  // Access actions individually to avoid function reference issues
+  const setTopic = useSessionStore((state) => state.actions.setTopic);
+  const setProficiency = useSessionStore((state) => state.actions.setProficiency);
+  const startSession = useSessionStore((state) => state.actions.startSession);
+  const endSession = useSessionStore((state) => state.actions.endSession);
+  const clearTopicIfNeeded = useSessionStore((state) => state.actions.clearTopicIfNeeded);
+  const hydrate = useSessionStore((state) => state.actions.hydrate);
+  
   useEffect(() => {
     hydrate();
-  }, [hydrate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+  
   const voiceActions = useVoiceStore((state) => state.actions);
 
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
