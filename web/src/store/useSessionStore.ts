@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { SessionSummary } from "@/lib/ai/sessionSummary";
 
 export type ProficiencyLevel = "A2" | "B1" | "B2";
 
@@ -8,12 +9,15 @@ interface SessionState {
   sessionActive: boolean;
   shouldClearOnFocus: boolean;
   cachedAt?: number | null;
+  sessionStartTime?: number | null;
+  summary: SessionSummary | null;
   actions: {
     setTopic: (topic: string) => void;
     setProficiency: (level: ProficiencyLevel) => void;
     startSession: () => void;
     endSession: () => void;
     clearTopicIfNeeded: () => void;
+    setSummary: (summary: SessionSummary | null) => void;
     hydrate: () => void;
     reset: () => void;
   };
@@ -35,6 +39,8 @@ export const useSessionStore = create<SessionState>((set) => {
           sessionActive: true,
           shouldClearOnFocus: false,
           topic: state.topic.trim(),
+          sessionStartTime: Date.now(),
+          summary: null, // Clear any previous summary
         };
         cacheSession({ ...state, ...next });
         return next;
@@ -49,6 +55,8 @@ export const useSessionStore = create<SessionState>((set) => {
         cacheSession({ ...state, ...next });
         return next;
       }),
+    setSummary: (summary) =>
+      set({ summary }),
     clearTopicIfNeeded: () =>
       set((state) => {
         if (!state.shouldClearOnFocus) return state;
@@ -73,6 +81,8 @@ export const useSessionStore = create<SessionState>((set) => {
           sessionActive: false,
           shouldClearOnFocus: false,
           cachedAt: null,
+          sessionStartTime: null,
+          summary: null,
         };
       }),
   };
@@ -83,6 +93,8 @@ export const useSessionStore = create<SessionState>((set) => {
     sessionActive: false,
     shouldClearOnFocus: false,
     cachedAt: null,
+    sessionStartTime: null,
+    summary: null,
     actions,
   };
 });

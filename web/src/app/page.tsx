@@ -1,8 +1,15 @@
+"use client";
+
 import SessionLanding from "@/components/session/SessionLanding";
 import VoiceExperience from "@/components/voice/VoiceExperience";
 import PrivacyRail from "@/components/session/PrivacyRail";
+import SessionSummary from "@/components/session/SessionSummary";
+import { useSessionStore } from "@/store/useSessionStore";
 
 export default function Home() {
+  const summary = useSessionStore((state) => state.summary);
+  const sessionActive = useSessionStore((state) => state.sessionActive);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       <main className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 lg:px-8 lg:py-16">
@@ -26,9 +33,17 @@ export default function Home() {
           </p>
         </header>
 
-        <SessionLanding />
-        <PrivacyRail />
-        <VoiceExperience />
+        {/* Always render SessionSummary to allow it to generate summary when session ends */}
+        <SessionSummary />
+        
+        {/* Show main content only if no summary is displayed */}
+        {!summary && (
+          <>
+            <SessionLanding />
+            <PrivacyRail />
+            <VoiceExperience />
+          </>
+        )}
       </main>
     </div>
   );
