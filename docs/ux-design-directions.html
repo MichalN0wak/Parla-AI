@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parla-AI Design Direction Showcase</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --background: #f4f5f7;
+      --surface: #ffffff;
+      --primary: #10b981;
+      --secondary: #f43f5e;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--background);
+      color: var(--text-main);
+    }
+    header {
+      padding: 48px 24px 24px;
+      text-align: center;
+    }
+    header h1 { margin-bottom: 8px; }
+    header p { margin: 0 auto; max-width: 720px; color: var(--text-muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      padding: 24px;
+    }
+    .direction-card {
+      background: var(--surface);
+      border-radius: 18px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 35px rgba(15, 23, 42, 0.09);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .direction-card h2 { margin: 0; font-size: 1.25rem; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      border-radius: 999px;
+      padding: 4px 12px;
+      background: rgba(16,185,129,.12);
+      color: #047857;
+      font-weight: 600;
+    }
+    .tag.secondary {
+      background: rgba(244,63,94,.12);
+      color: #be123c;
+    }
+    .mockup {
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: linear-gradient(135deg,#fefefe,#fafafa);
+      padding: 0;
+    }
+    .mockup iframe {
+      display: block;
+      width: 100%;
+      height: 320px;
+      border: none;
+      background: transparent;
+    }
+    .details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+      gap: 12px;
+      font-size: 0.93rem;
+    }
+    .details div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+      background: rgba(17,24,39,0.02);
+    }
+    .details strong { display: block; margin-bottom: 4px; }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s;
+    }
+    .btn.primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 8px 22px rgba(16,185,129,.35);
+    }
+    .btn.secondary {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+    .btn:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 3px;
+    }
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    iframe.responsive-illustration {
+      background: linear-gradient(160deg,#effaf6,#faf0f3);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Parla-AI Design Direction Showcase</h1>
+    <p>Visualizing the \"Spacious Conversation\" direction: a calming split-view where AI voice practice and Learning Cards coexist without friction.</p>
+  </header>
+
+  <section class="grid">
+    <article class="direction-card">
+      <div class="tag">Primary Direction</div>
+      <h2>Split Conversation Canvas</h2>
+      <p>Left panel keeps the conversation immersive, right panel hosts the Learning Cards stream. This mockup highlights the emerald/coral palette, generous spacing, and conversation-first hierarchy.</p>
+      <div class="mockup">
+        <iframe class="responsive-illustration"
+srcdoc="
+<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body{margin:0;font-family:Inter,sans-serif;background:#f9fafb;}
+.wrap{display:flex;height:100%;min-height:320px;}
+.chat{flex:3;padding:32px;display:flex;flex-direction:column;gap:16px;background:#ffffff;}
+.msg{padding:18px 20px;border-radius:16px;max-width:75%;box-shadow:0 10px 25px rgba(15,23,42,.05);font-size:15px;line-height:1.5;}
+.msg.ai{background:#ecfdf5;margin-right:auto;border:1px solid #10b98122;}
+.msg.user{background:#fef2f2;margin-left:auto;border:1px solid #f43f5e22;}
+.learning{flex:2;background:#fcfcfd;border-left:1px solid #e5e7eb;padding:24px;display:flex;flex-direction:column;gap:16px;}
+.card{padding:16px;border-radius:14px;border:1px solid #a7e8cf;background:#e6fbf3;}
+.card.correction{border-color:#f8b4c3;background:#ffe7eb;}
+.card small{display:block;margin-top:8px;color:#6b7280;font-size:12px;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-weight:600;}
+.header button{border:none;background:#10b981;color:#fff;padding:8px 18px;border-radius:999px;font-weight:600;}
+</style></head><body>
+<div class='wrap'>
+  <section class='chat'>
+    <div class='header'>Session: cultura italiana <button>End session</button></div>
+    <div class='msg ai'>Ciao Michal! Parliamo della tua esperienza a Roma. Dove ti piacerebbe iniziare?</div>
+    <div class='msg user'>Vorrei parlare della cucina… soprattutto dei piatti regionali!</div>
+    <div class='msg ai'>Ottimo! Qual è stato il piatto più sorprendente che hai provato?</div>
+  </section>
+  <aside class='learning'>
+    <div class='card'>
+      <strong>immersivo → immersyjny</strong>
+      <small>Nuovo vocabolario · Tap to copy</small>
+    </div>
+    <div class='card correction'>
+      <strong><span style='color:#be123c;text-decoration:line-through;'>Io andato</span> → Sono andato</strong>
+      <small>Correzione · Passato prossimo con essere</small>
+    </div>
+    <div class='card'>
+      <strong>piatto regionale</strong>
+      <small>Espressione utile · Conversation prompt</small>
+    </div>
+  </aside>
+</div></body></html>"></iframe>
+      </div>
+      <div class="details">
+        <div><strong>Layout</strong>60/40 split, independent scroll</div>
+        <div><strong>Density</strong>Spacious, large typography</div>
+        <div><strong>Interactions</strong>Inline Learning Cards, copy-on-click</div>
+        <div><strong>Usage</strong>Desktop + tablet core experience</div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="alert('Use this direction as the baseline for high-fidelity mockups.')">Set as baseline</button>
+        <button class="btn secondary" onclick="alert('Future work: explore condensed mobile version.')">Request variation</button>
+      </div>
+    </article>
+
+    <article class="direction-card">
+      <div class="tag secondary">Variation</div>
+      <h2>Focus Mode</h2>
+      <p>A condensed view that hides Learning Cards until needed. Users focus 100% on speaking, then reveal insights via a tray. Useful for smaller screens or learners who prefer minimal cues.</p>
+      <div class="mockup">
+        <iframe class="responsive-illustration"
+srcdoc="<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body{margin:0;font-family:Inter,sans-serif;background:#111827;color:#f9fafb;}
+.screen{min-height:320px;padding:30px;background:linear-gradient(135deg,#0f172a,#1f2937);}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.header button{background:#f43f5e;border:none;padding:10px 22px;border-radius:999px;color:#fff;font-weight:600;}
+.bubble{background:rgba(15,23,42,.8);padding:18px 22px;border-radius:18px;margin-bottom:16px;border:1px solid rgba(255,255,255,.08);}
+.tray{margin-top:24px;border-radius:18px;background:#1f2937;padding:18px;border:1px solid rgba(255,255,255,.08);}
+.tray button{background:#10b981;color:#fff;border:none;border-radius:12px;padding:10px 18px;font-weight:600;}
+</style></head><body>
+  <section class='screen'>
+    <div class='header'>
+      <div>Focus Mode · Livello B1</div>
+      <button>End session</button>
+    </div>
+    <div class='bubble'>AI: Raccontami la tua esperienza al mercato di Firenze. Cosa ti ha colpito?</div>
+    <div class='bubble' style='margin-left:15%;opacity:.85;'>Utente: Mi ha colpito il modo in cui i venditori raccontavano storie sui loro prodotti…</div>
+    <div class='tray'>
+      <div style='margin-bottom:12px;font-weight:600;'>Learning Cards (2 nuovi)</div>
+      <button>Apri il pannello</button>
+    </div>
+  </section>
+</body></html>"></iframe>
+      </div>
+      <div class="details">
+        <div><strong>Layout</strong>Single column, cards hidden</div>
+        <div><strong>Emotion</strong>Immersive, dark focus</div>
+        <div><strong>Use When</strong>Small screens, practice-heavy sessions</div>
+        <div><strong>Next</strong>Implement slide-up Learning Card tray</div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" onclick="alert('Variation saved for mobile + minimal mode exploration.')">Save variation</button>
+        <button class="btn secondary" onclick="alert('Noted: future toggle to switch between modes during a session.')">Add toggle idea</button>
+      </div>
+    </article>
+  </section>
+
+  <footer>Generated design directions for Parla-AI · <span id="date"></span></footer>
+  <script>
+    document.getElementById('date').textContent = new Date().toLocaleDateString();
+  </script>
+</body>
+</html>
+
