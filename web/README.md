@@ -45,6 +45,11 @@ Store secrets in `.env.local` (git-ignored). CI never needs real keys because li
 - `src/app/page.tsx` – Story 1.1 placeholder shell (landing + conversation + card panes)
 - `src/app/globals.css` – Tailwind v4 global tokens
 - `public/` – Static assets (icons, logos)
+- `src/store/useVoiceStore.ts` – Zustand voice session state (mic status, transcripts)
+- `src/store/useSessionStore.ts` – Topic/proficiency/session metadata
+- `src/hooks/useMicrophoneController.ts` – Web Audio permission/request logic
+- `src/components/session/SessionLanding.tsx` – Story 1.3 intake form w/ validation
+- `src/components/voice/VoiceExperience.tsx` – Story 1.4 split layout w/ sticky header + mic status chips
 
 Docs that feed planning live in `../docs` (PRD, product brief, architecture notes).
 
