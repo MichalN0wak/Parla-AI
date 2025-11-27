@@ -40,8 +40,14 @@ export class ConversationService {
 
   /**
    * Initializes a new conversation session.
+   * If a session already exists, it will be reset first to ensure clean state.
    */
   initialize(config: ConversationConfig): void {
+    // Reset any existing session to ensure clean state
+    if (this.config) {
+      this.reset();
+    }
+
     this.config = config;
     this.promptConfig = createPromptConfig(
       config.topic,
@@ -51,6 +57,11 @@ export class ConversationService {
 
     // Log prompt configuration for traceability
     this.logPromptConfig();
+    
+    // Log proficiency for verification (Story 2.3)
+    if (process.env.NODE_ENV === "development") {
+      console.log(`📚 Proficiency level: ${config.proficiency} - Dialogue strategies applied`);
+    }
 
     // Initialize with system prompt
     this.messages = [
