@@ -5,6 +5,10 @@ import {
   generateInitialGreeting,
   type PromptConfig,
 } from "@/lib/prompts/builder";
+import {
+  getTurnOrchestrationService,
+  type TurnStatus,
+} from "@/lib/ai/turnOrchestration";
 
 /**
  * Configuration for AI conversation service.
@@ -142,19 +146,63 @@ export class ConversationService {
   }
 
   /**
-   * TODO: Integrate with OpenAI Realtime API
-   * This method will handle streaming responses from OpenAI.
+   * Sends a user message and triggers AI response.
+   * Integrates with turn orchestration for proper turn management.
    */
   async sendUserMessage(content: string): Promise<void> {
-    // For now, this is a placeholder
-    // In Story 2.2, this will integrate with OpenAI Realtime API
+    const turnService = getTurnOrchestrationService();
+    
+    // Add user message
     this.addMessage("user", content);
     
-    // Mock response for development
-    if (process.env.NODE_ENV === "development") {
-      console.log("📤 User message sent (mock):", content);
-      console.log("⏳ Waiting for AI response... (to be implemented in Story 2.2)");
+    // Mark that user finished speaking
+    turnService.userFinishedSpeaking();
+    
+    // TODO: Integrate with OpenAI Realtime API
+    // For now, simulate AI response with delay
+    try {
+      await this.simulateAIResponse(content);
+      turnService.resetRetryCount();
+    } catch (error) {
+      // Handle network error with retry logic
+      const retrySuccess = await turnService.handleNetworkError(async () => {
+        await this.simulateAIResponse(content);
+      });
+      
+      if (!retrySuccess) {
+        this.addMessage("assistant", "Mi dispiace, c'è stato un errore. Puoi riprovare?");
+        turnService.startUserTurn();
+      }
     }
+  }
+
+  /**
+   * Simulates AI response (to be replaced with OpenAI Realtime API)
+   */
+  private async simulateAIResponse(userMessage: string): Promise<void> {
+    const turnService = getTurnOrchestrationService();
+    
+    // Mark that AI response has started
+    turnService.aiResponseStarted();
+    
+    // Simulate network delay (1-3 seconds)
+    const delay = 1000 + Math.random() * 2000;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    
+    // Generate mock response
+    const mockResponses = [
+      "Interessante! Dimmi di più.",
+      "Capisco. Cosa ne pensi?",
+      "Perfetto! Continua a parlare.",
+      "Sì, è un buon punto. E poi?",
+    ];
+    const response = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+    
+    // Add AI message
+    this.addMessage("assistant", response);
+    
+    // Queue audio for playback
+    turnService.queueAudio(response);
   }
 }
 

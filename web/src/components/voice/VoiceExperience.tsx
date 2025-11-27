@@ -5,6 +5,10 @@ import { useMicrophoneController } from "@/hooks/useMicrophoneController";
 import { useSessionStore } from "@/store/useSessionStore";
 import { MicPhase, VoiceLine, useVoiceStore } from "@/store/useVoiceStore";
 import { getConversationService } from "@/lib/ai/conversation";
+import {
+  getTurnOrchestrationService,
+  type TurnStatus,
+} from "@/lib/ai/turnOrchestration";
 
 const FALLBACK_CONVERSATION: VoiceLine[] = [
   { speaker: "AI", text: "Ciao! Di cosa vuoi parlare oggi?" },
@@ -80,14 +84,42 @@ const phaseIndicator: Record<
   },
 };
 
+const turnStatusIndicator: Record<
+  TurnStatus,
+  { label: string; style: string }
+> = {
+  idle: {
+    label: "Idle",
+    style: "bg-slate-700/40 text-slate-200",
+  },
+  user_turn: {
+    label: "Your turn",
+    style: "bg-emerald-500/30 text-emerald-100",
+  },
+  ai_thinking: {
+    label: "AI thinking",
+    style: "bg-amber-500/20 text-amber-200 animate-pulse",
+  },
+  ai_speaking: {
+    label: "AI speaking",
+    style: "bg-blue-500/30 text-blue-100",
+  },
+  error: {
+    label: "Error",
+    style: "bg-rose-500/20 text-rose-200",
+  },
+};
+
 export default function VoiceExperience() {
   const micPhase = useVoiceStore((state) => state.micPhase);
   const transcripts = useVoiceStore((state) => state.transcripts);
+  const turnStatus = useVoiceStore((state) => state.turnStatus);
   const lastError = useVoiceStore((state) => state.lastError);
   const addTranscript = useVoiceStore((state) => state.actions.addTranscript);
   const clearTranscripts = useVoiceStore(
     (state) => state.actions.clearTranscripts,
   );
+  const setTurnStatus = useVoiceStore((state) => state.actions.setTurnStatus);
   const voiceReset = useVoiceStore((state) => state.actions.reset);
 
   const { startRecording, stopRecording, isRecording, requestAccess } =
@@ -98,9 +130,10 @@ export default function VoiceExperience() {
   const sessionActive = useSessionStore((state) => state.sessionActive);
   const endSession = useSessionStore((state) => state.actions.endSession);
 
-  // Initialize conversation service when session starts
+  // Initialize conversation service and turn orchestration when session starts
   useEffect(() => {
     const conversationService = getConversationService();
+    const turnService = getTurnOrchestrationService();
     
     if (sessionActive && topic && proficiency) {
       // Initialize conversation with topic and proficiency
@@ -108,6 +141,23 @@ export default function VoiceExperience() {
         topic,
         proficiency,
         sessionId: `session-${Date.now()}`,
+      });
+
+      // Set up turn orchestration callbacks
+      turnService.setCallbacks({
+        onStatusChange: (status) => {
+          setTurnStatus(status);
+        },
+        onLatencyWarning: () => {
+          // Show "Still thinking..." message
+          addTranscript({
+            speaker: "System",
+            text: "⏳ Still thinking...",
+          });
+        },
+        onTurnReady: () => {
+          // User's turn is ready - can optionally enable mic automatically
+        },
       });
 
       // Get initial greeting and add it to transcripts
@@ -119,6 +169,8 @@ export default function VoiceExperience() {
           speaker: "AI",
           text: initialGreeting.content,
         });
+        // Queue initial greeting audio - turn will transition to user_turn automatically after audio ends
+        turnService.queueAudio(initialGreeting.content);
       }
 
       // Listen for new messages
@@ -128,17 +180,23 @@ export default function VoiceExperience() {
             speaker: "AI",
             text: message.content,
           });
+        } else if (message.role === "user") {
+          addTranscript({
+            speaker: "You",
+            text: message.content,
+          });
         }
       });
     } else if (!sessionActive) {
-      // Reset conversation service when session ends
+      // Reset services when session ends
       conversationService.reset();
+      turnService.reset();
     }
 
     return () => {
       // Cleanup handled by reset above
     };
-  }, [sessionActive, topic, proficiency, addTranscript, clearTranscripts]);
+  }, [sessionActive, topic, proficiency, addTranscript, clearTranscripts, setTurnStatus]);
 
   useMockTranscriptionFeed({ micPhase, addTranscript, clearTranscripts });
 
@@ -147,6 +205,7 @@ export default function VoiceExperience() {
     : FALLBACK_CONVERSATION;
 
   const indicator = phaseIndicator[micPhase];
+  const turnIndicator = turnStatusIndicator[turnStatus];
 
   const handlePrimaryAction = () => {
     if (!sessionActive) {
@@ -158,16 +217,24 @@ export default function VoiceExperience() {
     }
     if (isRecording) {
       stopRecording();
+      // User finished speaking - trigger AI response
+      const turnService = getTurnOrchestrationService();
+      turnService.userFinishedSpeaking();
       return;
     }
-    startRecording();
+    // Only allow recording during user's turn
+    if (turnStatus === "user_turn" || turnStatus === "idle") {
+      startRecording();
+    }
   };
 
   const handleEndSession = () => {
     stopRecording();
     voiceReset();
     const conversationService = getConversationService();
+    const turnService = getTurnOrchestrationService();
     conversationService.reset();
+    turnService.reset();
     endSession();
   };
 
@@ -192,8 +259,12 @@ export default function VoiceExperience() {
     if (isRecording) {
       return "Stop capture";
     }
+    // Check turn status - only allow recording during user's turn
+    if (turnStatus === "ai_thinking" || turnStatus === "ai_speaking") {
+      return turnStatus === "ai_thinking" ? "AI thinking..." : "AI speaking...";
+    }
     return micPhase === "ready" ? "Start capture" : "Enable microphone";
-  }, [isRecording, micPhase, sessionActive]);
+  }, [isRecording, micPhase, sessionActive, turnStatus]);
 
   const sessionChip = sessionActive
     ? {
@@ -233,6 +304,13 @@ export default function VoiceExperience() {
               role="status"
             >
               {indicator.label}
+            </span>
+            <span
+              className={`rounded-full px-3 py-0.5 text-xs font-semibold ${turnIndicator.style}`}
+              aria-live="polite"
+              role="status"
+            >
+              {turnIndicator.label}
             </span>
             <span className="rounded-full bg-sky-500/20 px-3 py-0.5 text-xs font-semibold text-sky-100">
               Latency target &lt; 2s
@@ -276,9 +354,15 @@ export default function VoiceExperience() {
                 ? "Start a session to enable microphone capture."
                 : micPhase === "unsupported"
                   ? "Your browser does not expose the required APIs."
-                  : micPhase === "recording"
-                    ? "Streaming audio — transcription mocked locally."
-                    : "Ready to capture — start when you’re ready."}
+                  : turnStatus === "ai_thinking"
+                    ? "AI is thinking... Please wait."
+                    : turnStatus === "ai_speaking"
+                      ? "AI is speaking... Wait for your turn."
+                      : turnStatus === "user_turn"
+                        ? micPhase === "recording"
+                          ? "Streaming audio — transcription mocked locally."
+                          : "Your turn — start speaking when ready."
+                        : "Ready to capture — start when you're ready."}
             </p>
             {lastError && (
               <p className="text-xs text-rose-300">{lastError}</p>
@@ -289,15 +373,19 @@ export default function VoiceExperience() {
               className={`rounded-full px-6 py-2 text-sm font-semibold shadow-lg transition focus-visible:outline focus-visible:outline-2 ${
                 micPhase === "unsupported" || !sessionActive
                   ? "cursor-not-allowed bg-slate-700 text-slate-400 shadow-none"
-                  : isRecording
-                    ? "bg-rose-400/90 text-rose-950 shadow-rose-500/30"
-                    : "bg-emerald-500/80 text-emerald-900 shadow-emerald-500/30"
+                  : turnStatus === "ai_thinking" || turnStatus === "ai_speaking"
+                    ? "cursor-not-allowed bg-slate-700 text-slate-400 shadow-none"
+                    : isRecording
+                      ? "bg-rose-400/90 text-rose-950 shadow-rose-500/30"
+                      : "bg-emerald-500/80 text-emerald-900 shadow-emerald-500/30"
               }`}
               onClick={handlePrimaryAction}
               disabled={
                 micPhase === "unsupported" ||
                 micPhase === "requesting" ||
-                !sessionActive
+                !sessionActive ||
+                turnStatus === "ai_thinking" ||
+                turnStatus === "ai_speaking"
               }
             >
               {primaryLabel}

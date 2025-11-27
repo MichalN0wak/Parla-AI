@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { TurnStatus } from "@/lib/ai/turnOrchestration";
 
 export type VoiceSpeaker = "AI" | "You" | "System";
 
@@ -22,6 +23,7 @@ interface VoiceStore {
   permission: PermissionState;
   mediaStream: MediaStream | null;
   transcripts: VoiceLine[];
+  turnStatus: TurnStatus;
   lastError?: string;
   actions: {
     setPhase: (phase: MicPhase) => void;
@@ -31,6 +33,7 @@ interface VoiceStore {
     markUnsupported: (message?: string) => void;
     addTranscript: (line: VoiceLine) => void;
     clearTranscripts: () => void;
+    setTurnStatus: (status: TurnStatus) => void;
     reset: () => void;
   };
 }
@@ -60,12 +63,14 @@ export const useVoiceStore = create<VoiceStore>((set) => {
         transcripts: [...state.transcripts, line],
       })),
     clearTranscripts: () => set({ transcripts: [] }),
+    setTurnStatus: (status) => set({ turnStatus: status }),
     reset: () =>
       set({
         micPhase: "idle",
         permission: "unknown",
         mediaStream: null,
         transcripts: [],
+        turnStatus: "idle",
         lastError: undefined,
       }),
   };
@@ -75,6 +80,7 @@ export const useVoiceStore = create<VoiceStore>((set) => {
     permission: "unknown",
     mediaStream: null,
     transcripts: [],
+    turnStatus: "idle",
     lastError: undefined,
     actions,
   };
