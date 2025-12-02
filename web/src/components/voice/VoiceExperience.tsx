@@ -10,6 +10,12 @@ import {
   type TurnStatus,
 } from "@/lib/ai/turnOrchestration";
 import { getCoachingService } from "@/lib/ai/coaching";
+import { getDualLanguageTranscriptionService } from "@/lib/transcription/dualLanguageTranscriber";
+import { getDualASRService } from "@/lib/transcription/dualASRService";
+import type { DualLanguageTranscriptionResult } from "@/lib/transcription/types";
+import { detectHelperPhrase } from "@/lib/transcription/helperPhrases";
+import { usePushToAsk } from "@/hooks/usePushToAsk";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const FALLBACK_CONVERSATION: VoiceLine[] = [
   { speaker: "AI", text: "Ciao! Di cosa vuoi parlare oggi?" },
@@ -20,25 +26,6 @@ const FALLBACK_CONVERSATION: VoiceLine[] = [
   {
     speaker: "AI",
     text: "Perfetto! Cominciamo con il motivo del viaggio?",
-  },
-];
-
-const MOCK_STREAM_RESPONSES: VoiceLine[] = [
-  {
-    speaker: "System",
-    text: "🎙️ Listening for Italian + Polish phrases…",
-  },
-  {
-    speaker: "You",
-    text: "Napoli mi ispira per la sua energia e il Vesuvio.",
-  },
-  {
-    speaker: "AI",
-    text: "Adoro Napoli! Ti interessano di più i musei o il cibo?",
-  },
-  {
-    speaker: "You",
-    text: "In realtà entrambi, ma voglio migliorare il mio italiano parlando con i locali.",
   },
 ];
 
@@ -181,11 +168,6 @@ export default function VoiceExperience() {
             speaker: "AI",
             text: message.content,
           });
-        } else if (message.role === "user") {
-          addTranscript({
-            speaker: "You",
-            text: message.content,
-          });
         }
       });
     } else if (!sessionActive) {
@@ -201,7 +183,17 @@ export default function VoiceExperience() {
     };
   }, [sessionActive, topic, proficiency, addTranscript, clearTranscripts, setTurnStatus]);
 
-  useMockTranscriptionFeed({ micPhase, addTranscript, clearTranscripts });
+  // Push-to-Ask functionality
+  const { isPolishMode, isSwitching, startPolishMode, endPolishMode } = usePushToAsk(
+    sessionActive && micPhase === "recording",
+  );
+
+  useDualLanguageTranscription({
+    micPhase,
+    sessionActive,
+    addTranscript,
+    isPolishMode,
+  });
 
   const conversation = transcripts.length
     ? transcripts
@@ -228,9 +220,7 @@ export default function VoiceExperience() {
       coachingService.recordSpeechEnd();
       
       turnService.userFinishedSpeaking();
-      
-      // TODO: When real transcription is available, analyze the transcript here
-      // For now, coaching will be handled by the conversation service
+      // Conversation service will send once transcription completes
       return;
     }
     // Only allow recording during user's turn
@@ -338,7 +328,7 @@ export default function VoiceExperience() {
             </div>
           )}
           {sessionActive &&
-            conversation.map(({ speaker, text }, index) => (
+            conversation.map(({ speaker, text, metadata }, index) => (
               <article
                 key={`${speaker}-${index}-${text}`}
                 className={`rounded-2xl border border-slate-800/80 p-4 text-sm leading-relaxed ${
@@ -353,6 +343,25 @@ export default function VoiceExperience() {
                   {speaker}
                 </p>
                 <p>{text}</p>
+                {speaker === "You" && metadata && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-[11px] uppercase tracking-widest text-slate-500">
+                      Tokens 🇮🇹 {metadata.stats.italian} · 🇵🇱 {metadata.stats.polish} ·{" "}
+                      {metadata.provider === "fallback" ? "Fallback" : "Web Speech"}
+                    </p>
+                    {metadata.helperPhraseIntent && (
+                      <p className="text-[11px] font-semibold text-emerald-400">
+                        🔍 Helper phrase detected: {metadata.helperPhraseIntent}
+                        {metadata.helperPhraseExtracted && (
+                          <span className="text-emerald-300">
+                            {" "}
+                            · &ldquo;{metadata.helperPhraseExtracted}&rdquo;
+                          </span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
         </div>
@@ -380,6 +389,11 @@ export default function VoiceExperience() {
             {lastError && (
               <p className="text-xs text-rose-300">{lastError}</p>
             )}
+            {sessionActive && (turnStatus === "user_turn" || turnStatus === "idle") && (
+              <p className="mt-2 text-xs text-slate-400">
+                💡 <strong>Tip:</strong> Hold the &ldquo;Help&rdquo; button or press <kbd className="px-1.5 py-0.5 rounded bg-slate-800/60 text-slate-300 text-xs font-mono border border-slate-700/50">Space</kbd> to ask questions in Polish
+              </p>
+            )}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
@@ -404,12 +418,44 @@ export default function VoiceExperience() {
               {primaryLabel}
             </button>
             {sessionActive && (
-              <button
-                onClick={handleEndSession}
-                className="rounded-full border border-slate-700/70 px-6 py-2 text-sm font-semibold text-slate-200 hover:border-rose-400 hover:text-rose-200 focus-visible:outline focus-visible:outline-2"
-              >
-                End session
-              </button>
+              <>
+                {/* Push-to-Ask Help Button */}
+                <Tooltip
+                  content={
+                    isPolishMode
+                      ? "Speaking in Polish... Release to return to Italian"
+                      : isSwitching
+                        ? "Switching language mode..."
+                        : "Hold this button or press Spacebar to ask a question in Polish. The system will switch to Polish recognition mode for accurate transcription."
+                  }
+                  position="top"
+                  delay={200}
+                >
+                  <button
+                    onMouseDown={startPolishMode}
+                    onMouseUp={endPolishMode}
+                    onTouchStart={startPolishMode}
+                    onTouchEnd={endPolishMode}
+                    disabled={isSwitching || turnStatus === "ai_speaking" || turnStatus === "ai_thinking"}
+                    className={`rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
+                      isPolishMode
+                        ? "border-blue-400 bg-blue-500/20 text-blue-200 animate-pulse"
+                        : isSwitching
+                          ? "border-slate-600 bg-slate-800/40 text-slate-400"
+                          : "border-slate-700/70 bg-slate-800/40 text-slate-200 hover:border-blue-400 hover:bg-blue-500/10 hover:text-blue-200"
+                    } focus-visible:outline focus-visible:outline-2 disabled:opacity-50`}
+                    aria-label="Push-to-Ask: Hold to ask a question in Polish"
+                  >
+                    {isSwitching ? "⏳" : isPolishMode ? "🇵🇱 Ask..." : "❓ Help"}
+                  </button>
+                </Tooltip>
+                <button
+                  onClick={handleEndSession}
+                  className="rounded-full border border-slate-700/70 px-6 py-2 text-sm font-semibold text-slate-200 hover:border-rose-400 hover:text-rose-200 focus-visible:outline focus-visible:outline-2"
+                >
+                  End session
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -463,60 +509,169 @@ export default function VoiceExperience() {
   );
 }
 
-function useMockTranscriptionFeed({
+function useDualLanguageTranscription({
   micPhase,
+  sessionActive,
   addTranscript,
-  clearTranscripts,
+  isPolishMode = false,
 }: {
   micPhase: MicPhase;
+  sessionActive: boolean;
   addTranscript: (line: VoiceLine) => void;
-  clearTranscripts: () => void;
+  isPolishMode?: boolean;
 }) {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const payloadRef = useRef<VoiceLine[]>([]);
-  const hasAddedMockData = useRef(false);
+  // Use dual ASR service for Push-to-Ask, fallback to old service if needed
+  const dualASRServiceRef = useRef<ReturnType<typeof getDualASRService> | null>(null);
+  const oldServiceRef = useRef<ReturnType<
+    typeof getDualLanguageTranscriptionService
+  > | null>(null);
+  const pendingTranscriptionRef = useRef<DualLanguageTranscriptionResult | null>(null);
+  const processedTimestampsRef = useRef<Set<number>>(new Set());
+  const usePushToAsk = isPolishMode !== undefined; // Feature flag
 
   useEffect(() => {
-    if (micPhase !== "recording") {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    if (usePushToAsk) {
+      // Use new dual ASR service
+      const dualASRService = getDualASRService();
+      dualASRService.setCallbacks({
+        onWarning: (message) => {
+          addTranscript({
+            speaker: "System",
+            text: `⚠️ ${message}`,
+          });
+        },
+        onError: (message) => {
+          addTranscript({
+            speaker: "System",
+            text: `⚠️ ${message}`,
+          });
+        },
+        onFinalResult: (result) => {
+          // Prevent duplicate processing
+          if (processedTimestampsRef.current.has(result.timestamp)) {
+            return;
+          }
+          processedTimestampsRef.current.add(result.timestamp);
+          
+          pendingTranscriptionRef.current = result;
+          
+          // Detect helper phrase (simplified for Polish mode)
+          const helperDetection = result.isTranslationRequest
+            ? { intent: "translation_request" as const, extractedPhrase: result.transcript, confidence: 0.95 }
+            : detectHelperPhrase(result.transcript, result.tokens);
+          
+          addTranscript({
+            speaker: "You",
+            text: result.transcript,
+            metadata: {
+              provider: result.provider,
+              reliability: result.reliability,
+              tokens: result.tokens,
+              stats: result.stats,
+              timestamp: result.timestamp,
+              helperPhraseIntent:
+                helperDetection.intent !== "none" ? helperDetection.intent : undefined,
+              helperPhraseExtracted: helperDetection.extractedPhrase,
+            },
+          });
+        },
+      });
+      dualASRServiceRef.current = dualASRService;
+    } else {
+      // Fallback to old service
+      const service = getDualLanguageTranscriptionService();
+      service.setCallbacks({
+        onWarning: (message) => {
+          addTranscript({
+            speaker: "System",
+            text: `⚠️ ${message}`,
+          });
+        },
+        onError: (message) => {
+          addTranscript({
+            speaker: "System",
+            text: `⚠️ ${message}`,
+          });
+        },
+        onFinalResult: (result) => {
+          if (processedTimestampsRef.current.has(result.timestamp)) {
+            return;
+          }
+          processedTimestampsRef.current.add(result.timestamp);
+          
+          pendingTranscriptionRef.current = result;
+          const helperDetection = detectHelperPhrase(result.transcript, result.tokens);
+          addTranscript({
+            speaker: "You",
+            text: result.transcript,
+            metadata: {
+              provider: result.provider,
+              reliability: result.reliability,
+              tokens: result.tokens,
+              stats: result.stats,
+              timestamp: result.timestamp,
+              helperPhraseIntent:
+                helperDetection.intent !== "none" ? helperDetection.intent : undefined,
+              helperPhraseExtracted: helperDetection.extractedPhrase,
+            },
+          });
+        },
+      });
+      oldServiceRef.current = service;
+    }
+  }, [addTranscript, usePushToAsk]);
+
+  // When user stops recording, send pending transcription to AI
+  useEffect(() => {
+    if (micPhase !== "recording" && pendingTranscriptionRef.current) {
+      const result = pendingTranscriptionRef.current;
+      // Check again to prevent duplicate (Issue #4 fix)
+      if (!processedTimestampsRef.current.has(result.timestamp)) {
+        processedTimestampsRef.current.add(result.timestamp);
+        // Now send to conversation service (but don't add to transcript again)
+        const conversationService = getConversationService();
+        void conversationService.sendUserMessage(
+          result.transcript,
+          result.stats.polish > 0,
+          result,
+        );
       }
-      intervalRef.current = null;
-      payloadRef.current = [];
-      hasAddedMockData.current = false;
+      pendingTranscriptionRef.current = null;
+    }
+  }, [micPhase]);
+
+  useEffect(() => {
+    if (!sessionActive) {
+      if (usePushToAsk && dualASRServiceRef.current) {
+        dualASRServiceRef.current.reset();
+      } else if (oldServiceRef.current) {
+        oldServiceRef.current.stop();
+      }
+      pendingTranscriptionRef.current = null;
+      processedTimestampsRef.current.clear();
       return;
     }
-
-    // Only add mock data once when recording starts
-    // Don't clear existing transcripts (preserve initial greeting from Story 2.1)
-    if (!hasAddedMockData.current) {
-      hasAddedMockData.current = true;
-      payloadRef.current = [...MOCK_STREAM_RESPONSES];
-
-      addTranscript({
-        speaker: "System",
-        text: "🔄 Connecting to OpenAI Realtime (mock feed)…",
-      });
-
-      intervalRef.current = setInterval(() => {
-        const next = payloadRef.current.shift();
-        if (!next) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-          }
-          return;
-        }
-        addTranscript(next);
-      }, 2200);
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    
+    if (usePushToAsk && dualASRServiceRef.current) {
+      // Use dual ASR service
+      if (micPhase === "recording" && !isPolishMode) {
+        // Start Italian recognition
+        dualASRServiceRef.current.startItalian();
+      } else if (micPhase !== "recording") {
+        // Stop Italian (Polish is handled by Push-to-Ask hook)
+        dualASRServiceRef.current.stopItalian();
       }
-    };
-  }, [addTranscript, clearTranscripts, micPhase]);
+    } else if (oldServiceRef.current) {
+      // Use old service
+      if (micPhase === "recording") {
+        oldServiceRef.current.start();
+      } else {
+        oldServiceRef.current.stop();
+      }
+    }
+  }, [micPhase, sessionActive, usePushToAsk, isPolishMode]);
 }
+
 
 function useGlobalShortcuts({
   micPhase,

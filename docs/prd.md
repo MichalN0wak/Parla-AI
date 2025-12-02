@@ -99,11 +99,12 @@ The MVP focuses on delivering the core value proposition: safe, private conversa
    - AI-powered conversation partner that responds in Italian
    - Natural conversation flow on user-selected topics
 
-2. **Code-Switching Support**
+2. **Code-Switching Support (Push-to-Ask)**
    - Bilingual transcription that recognizes both Italian and Polish
-   - Context understanding when users mix languages
+   - **Push-to-Ask mechanism**: Users explicitly switch to Polish mode (button or Spacebar) to ask questions
+   - Clean Polish transcription when in Polish mode (no garbling)
    - AI maintains Italian responses even when user uses Polish helper words/questions
-   - Seamless handling of language transitions
+   - Visual feedback indicates when system is listening in Polish mode
 
 3. **Real-Time Learning Cards**
    - Visual panel (right-hand side) displaying learning notes during conversation
@@ -345,11 +346,11 @@ Functional requirements define WHAT capabilities the product must have. These ar
 
 **FR-009:** The system transcribes mixed Italian-Polish speech, identifying which words are in which language.
 
-**FR-010:** The system understands Polish context (e.g., user asking "jak się mówi..." or using Polish words) while maintaining Italian conversation flow.
+**FR-010:** The system understands Polish context (e.g., user asking "jak się mówi..." or using Polish words) while user explicitly switches to Polish mode.
 
-**FR-011:** The system handles seamless transitions between Italian and Polish without requiring explicit language switching.
+**FR-011:** The system handles explicit button/keyboard shortcut between Italian and Polish without requiring explicit language switching.
 
-**FR-012:** The AI recognizes when Polish words are used as helper words or questions and responds appropriately in Italian.
+**FR-012:** The AI receive clean Polish transcriptions as helper words or questions and responds appropriately in Italian.
 
 ### Learning Cards & Real-Time Feedback
 
